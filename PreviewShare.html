@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PreviewShare</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet">
+  <style>
+    body {
+      background-color: #1f1f1f;
+      color: ghostwhite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .logoStyles {
+      text-decoration: underline;
+    }
+
+    #dropbox {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      width: 300px;
+      background-color: #666;
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 30px;
+    }
+
+    #preview-container {
+      display: none;
+      max-width: 80vw;
+      overflow-y: auto;
+    }
+
+    .preview-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      background-color: #333333;
+      padding: 10px;
+    }
+
+    .image-preview {
+      max-width: 500px;
+      max-height: 300px;
+      object-fit: contain;
+      margin-right: 10px;
+      background-color: #333333;
+      cursor: pointer;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    span {
+      cursor: pointer;
+      padding: 0px 50px;
+      font-style: italic;
+    }
+
+    p {
+      display: none;
+      font-size: .8em;
+      font-style: italic;
+    }
+
+    .block {
+      display: block;
+    }
+
+    .alt-text-input {
+      margin-left: 20px;
+      margin-bottom: 10px;
+      width: 300px;
+      margin-right: 20px;
+    }
+
+    .reset-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .download-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #4d79ff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .button-container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="logoStyles">
+    <h1>PreviewShare</h1>
+  </div>
+  <div id="dropbox">
+    <h3>Drag and drop images here</h3>
+    <p>Click the filename to copy the URL of the image</p>
+  </div>
+
+  <div id="preview-container"></div>
+
+  <div class="button-container">
+    <button id="download-button" class="download-button" style="display: none;">Download Alt Text</button>
+    <button id="reset-button" class="reset-button" style="display: none;">Reset</button>
+  </div>
+
+  <script>
+    function handleFileDrop(event) {
+      event.preventDefault();
+
+      var files = event.dataTransfer.files;
+      var pTag = dropbox.getElementsByTagName('p')[0];
+
+      if (pTag) {
+        pTag.classList.add('block');
+      }
+
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+
+        // Only process image files
+        if (file.type.match('image.*')) {
+          var reader = new FileReader();
+
+          reader.onload = (function(file) {
+            return function(event) {
+              var image = new Image();
+              image.src = event.target.result;
+              image.className = "image-preview";
+
+              // Calculate image dimensions based on original size
+              image.onload = function() {
+                // Image resizing code here
+              };
+
+              var fileName = document.createElement('span');
+              fileName.textContent = "images/" + file.name;
+
+              var altTextInput = document.createElement('input');
+              altTextInput.type = "text";
+              altTextInput.className = "alt-text-input";
+              altTextInput.placeholder = "Enter alt text";
+              altTextInput.addEventListener('input', function() {
+                updateAltText(file.name, this.value);
+              });
+
+              var container = document.createElement('div');
+              container.className = "preview-item";
+              container.appendChild(image);
+              container.appendChild(fileName);
+              container.appendChild(altTextInput);
+              document.getElementById('preview-container').appendChild(container);
+
+              // Add click event listener to the image
+              image.addEventListener('click', function() {
+                window.open(this.src, '_blank');
+              });
+
+              // Add click event listener to the filename
+              fileName.addEventListener('click', function() {
+                var text = "images/" + file.name;
+                copyTextToClipboard(text);
+              });
+
+              // Show the preview container
+              document.getElementById('preview-container').style.display = "block";
+
+              // Enable download and reset buttons
+              document.getElementById('download-button').style.display = "block";
+              document.getElementById('reset-button').style.display = "block";
+            };
+          })(file);
+
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+
+    function updateAltText(fileName, altText) {
+      altTexts[fileName] = altText;
+    }
+
+    function downloadAltText() {
+      var csvContent = "data:text/csv;charset=utf-8,";
+
+      // Add the headers to the CSV content
+      csvContent += "Image Name,Alt-Text\n";
+
+      Object.keys(altTexts).forEach(function(fileName) {
+        var altText = altTexts[fileName];
+        csvContent += fileName + "," + altText + "\n";
+      });
+
+      var encodedUri = encodeURI(csvContent);
+      var link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "alt-text.csv");
+      document.body.appendChild(link); // Required for Firefox
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function resetPage() {
+      document.getElementById('preview-container').innerHTML = "";
+      document.getElementById('download-button').style.display = "none";
+      document.getElementById('reset-button').style.display = "none";
+      altTexts = {};
+    }
+
+    function copyTextToClipboard(text) {
+      var dummyElement = document.createElement("textarea");
+      document.body.appendChild(dummyElement);
+      dummyElement.value = text;
+      dummyElement.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummyElement);
+    }
+
+    var dropbox = document.getElementById('dropbox');
+    var altTexts = {};
+
+    dropbox.addEventListener('dragover', function(event) {
+      event.preventDefault();
+      dropbox.style.border = "2px dashed #aaa";
+    });
+
+    dropbox.addEventListener('dragleave', function(event) {
+      event.preventDefault();
+      dropbox.style.border = "2px dashed #ccc";
+    });
+
+    dropbox.addEventListener('drop', handleFileDrop);
+
+    document.getElementById('download-button').addEventListener('click', downloadAltText);
+    document.getElementById('reset-button').addEventListener('click', resetPage);
+
+    // Prompt the user before refreshing or closing the page
+    window.addEventListener('beforeunload', function(e) {
+      e.preventDefault();
+      e.returnValue = '';
+    });
+  </script>
+</body>
+</html>

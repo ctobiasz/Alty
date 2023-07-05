@@ -48,9 +48,10 @@
     }
 
     .image-preview {
-      max-width: 500px;
-      max-height: 300px;
-      object-fit: contain;
+      width: 500px;
+      height: 300px;
+      object-fit: cover;
+      object-position: center;
       margin-right: 10px;
       background-color: #333333;
       cursor: pointer;
@@ -73,12 +74,15 @@
     .block {
       display: block;
     }
-
+    .image-name-span {
+      padding: 20px 0px;
+      display: block;
+      text-align: center;
+    }
     .alt-text-input {
-      margin-left: 20px;
-      margin-bottom: 10px;
+      margin: 0px auto 10px auto;
+      display: block;
       width: 300px;
-      margin-right: 20px;
     }
 
     .reset-button {
@@ -107,11 +111,37 @@
       margin-bottom: 20px;
     }
 
-    @media (max-width: 600px) {
+    .image-name-span {
+      font-weight: bold;
+    }
+
+    @media (max-width: 980px) {
       .button-container {
         flex-direction: column;
       }
+      #preview-container {
+        width: 90%;
+      }
+      .preview-item {
+        flex-direction: column;
+      }
+      .alt-text-input {
+        display: flex;
+        justify-content: center;
+        margin-left: 0;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        width: 100%;
+      }
+      .image-name-span {
+        display: block;
+        margin: 20px 0px;
+      }
+      .image-preview {
+        width: 90%;
+      }
     }
+       
   </style>
 </head>
 <body>
@@ -141,6 +171,8 @@
         pTag.classList.add('block');
       }
 
+      var filesProcessed = 0; // Track the number of files processed
+
       for (var i = 0; i < files.length; i++) {
         var file = files[i];
 
@@ -148,52 +180,63 @@
         if (file.type.match('image.*')) {
           var reader = new FileReader();
 
-          reader.onload = (function(file) {
-            return function(event) {
-              var image = new Image();
-              image.src = event.target.result;
+          reader.onload = (function (file) {
+            return function (e) {
+              const image = new Image();
+              image.src = e.target.result;
               image.className = "image-preview";
 
-              // Calculate image dimensions based on original size
-              image.onload = function() {
-                // Image resizing code here
-              };
+              const container = document.createElement('div');
+              container.className = "preview-item";
+              container.appendChild(image);
 
-              var fileName = document.createElement('span');
+              const infoContainer = document.createElement('div');
+              infoContainer.className = "info-container";
+
+              const fileName = document.createElement('span');
+              fileName.className = 'image-name-span';
               fileName.textContent = "images/" + file.name;
+              infoContainer.appendChild(fileName);
 
-              var altTextInput = document.createElement('input');
+              const altTextInput = document.createElement('input');
               altTextInput.type = "text";
               altTextInput.className = "alt-text-input";
               altTextInput.placeholder = "Enter alt text";
-              altTextInput.addEventListener('input', function() {
+              altTextInput.addEventListener('input', function () {
                 updateAltText(file.name, this.value);
               });
+              infoContainer.appendChild(altTextInput);
 
-              var container = document.createElement('div');
-              container.className = "preview-item";
-              container.appendChild(image);
-              container.appendChild(fileName);
-              container.appendChild(altTextInput);
-              document.getElementById('preview-container').appendChild(container);
+              container.appendChild(infoContainer);
+
+              previewContainer.appendChild(container);
 
               // Add click event listener to the image
-              image.addEventListener('click', function() {
+              image.addEventListener('click', function () {
                 window.open(this.src, '_blank');
               });
 
               // Add click event listener to the filename
-              fileName.addEventListener('click', function() {
+              fileName.addEventListener('click', function () {
                 var text = "images/" + file.name;
                 copyTextToClipboard(text);
               });
 
               // Show the preview container
-              document.getElementById('preview-container').style.display = "block";
+              previewContainer.style.display = "block";
 
               // Enable download and reset buttons
-              document.getElementById('download-button').style.display = "block";
-              document.getElementById('reset-button').style.display = "block";
+              downloadButton.style.display = "block";
+              resetButton.style.display = "block";
+
+              // Increase the filesProcessed count
+              filesProcessed++;
+
+              // Check if all files have been processed
+              if (filesProcessed === files.length) {
+                // Call the downloadAltText function here
+                downloadAltText();
+              }
             };
           })(file);
 
@@ -243,28 +286,36 @@
     }
 
     var dropbox = document.getElementById('dropbox');
+    var previewContainer = document.getElementById('preview-container');
+    var downloadButton = document.getElementById('download-button');
+    var resetButton = document.getElementById('reset-button');
     var altTexts = {};
 
-    dropbox.addEventListener('dragover', function(event) {
+    document.body.addEventListener('dragover', handleDragOver);
+    document.body.addEventListener('dragleave', handleDragLeave);
+    document.body.addEventListener('drop', handleFileDrop);
+
+    downloadButton.addEventListener('click', downloadAltText);
+    resetButton.addEventListener('click', resetPage);
+
+    function handleDragOver(event) {
       event.preventDefault();
+      event.stopPropagation(); // Prevent the event from bubbling up
       dropbox.style.border = "2px dashed #aaa";
-    });
+    }
 
-    dropbox.addEventListener('dragleave', function(event) {
+    function handleDragLeave(event) {
       event.preventDefault();
+      event.stopPropagation(); // Prevent the event from bubbling up
       dropbox.style.border = "2px dashed #ccc";
-    });
-
-    dropbox.addEventListener('drop', handleFileDrop);
-
-    document.getElementById('download-button').addEventListener('click', downloadAltText);
-    document.getElementById('reset-button').addEventListener('click', resetPage);
+    }
 
     // Prompt the user before refreshing or closing the page
     window.addEventListener('beforeunload', function(e) {
       e.preventDefault();
       e.returnValue = '';
     });
+
   </script>
 </body>
 </html>

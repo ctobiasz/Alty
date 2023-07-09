@@ -20,7 +20,7 @@
       align-items: center;
       justify-content: center;
       height: 100vh;
-      margin: 0;
+      margin-bottom: 40px;
     }
 
     .logoStyles {
@@ -41,10 +41,12 @@
       display: none;
       max-width: 80vw;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .preview-item {
       display: flex;
+      flex-direction: column;
       align-items: center;
       margin-bottom: 10px;
       background-color: #333333;
@@ -52,10 +54,12 @@
     }
 
     .image-preview {
-      width: 600px;
-      height: 400px;
-      object-fit: cover;
+      width: 100%;
+      height: auto;
+      max-height: 30vh; 
+      object-fit: contain;
       object-position: center;
+
       margin-right: 10px;
       background-color: #333333;
       cursor: pointer;
@@ -233,9 +237,6 @@
     }
 
     @media (max-width: 980px) {
-      .button-container {
-        flex-direction: column;
-      }
       #preview-container {
         width: 90%;
       }
